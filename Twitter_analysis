@@ -1,0 +1,298 @@
+# Twitter test dataset
+import pandas as pd
+import re
+
+data = pd.read_csv("Corona_NLP_test.csv")
+new_text = []
+for text in data['OriginalTweet'].tolist():
+  transf = re.sub(r'http\S+', '', text) # removing URLS
+  transf = re.sub(r'@[^ ]+', '', transf) # removing usernames
+  transf = re.sub(r'#', '', transf) # removing the # character in hashtags but keeping the hashtag
+  transf = re.sub(r' 0 ', 'zero', transf) # converting single "0" to the word "zero"
+  transf = transf.replace(".", ". ") # adding a space after a period
+  transf = re.sub(r'[^A-Za-z ]', ' ', transf) # removing punctuations, special characters and numbers *** thinking if to replacewith space or not with space
+  transf = transf.lower() # make all lower case
+  transf = transf.strip() # strip trailing and leading spaces
+  new_text.append(transf)
+
+# Twitter training dataset
+
+
+data_train = pd.read_csv("Corona_NLP_train.csv", encoding= 'latin-1', header=0)
+new_text_train = []
+for text in data_train['OriginalTweet'].tolist():
+  transf = re.sub(r'http\S+', '', text) # removing URLS
+  transf = re.sub(r'@[^ ]+', '', transf) # removing usernames
+  transf = re.sub(r'#', '', transf) # removing the # character in hashtags but keeping the hashtag
+  transf = re.sub(r' 0 ', 'zero', transf) # converting single "0" to the word "zero"
+  transf = transf.replace(".", ". ") # adding a space after a period
+  transf = re.sub(r'[^A-Za-z ]', ' ', transf) # removing punctuations, special characters and numbers *** thinking if to replacewith space or not with space
+  transf = transf.lower() # make all lower case
+  transf = transf.strip() # strip trailing and leading spaces
+  new_text_train.append(transf)
+
+# Lexicons
+# anger lexicon
+anger_lexicon = pd.read_csv('anger-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+anger_lexicon = anger_lexicon.rename(columns={0 : "word", 1 : "present"})
+anger_lexicon = anger_lexicon[anger_lexicon['present'] == 1]
+
+# anticipate lexicon
+anticipate_lexicon = pd.read_csv('anticipation-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+anticipate_lexicon = anticipate_lexicon.rename(columns={0 : "word", 1 : "present"})
+anticipate_lexicon = anticipate_lexicon[anticipate_lexicon['present'] == 1]
+
+# disgust lexicon
+disgust_lexicon = pd.read_csv('disgust-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+disgust_lexicon = disgust_lexicon.rename(columns={0 : "word", 1 : "present"})
+disgust_lexicon = disgust_lexicon[disgust_lexicon['present'] == 1]
+
+# fear lexicon
+fear_lexicon = pd.read_csv('fear-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+fear_lexicon = fear_lexicon.rename(columns={0 : "word", 1 : "present"})
+fear_lexicon = fear_lexicon[fear_lexicon['present'] == 1]
+
+# joy lexicon
+joy_lexicon = pd.read_csv('joy-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+joy_lexicon = joy_lexicon.rename(columns={0 : "word", 1 : "present"})
+joy_lexicon = joy_lexicon[joy_lexicon['present'] == 1]
+
+# negative emotion lexicon
+negative_lexicon = pd.read_csv('negative-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+negative_lexicon = negative_lexicon.rename(columns={0 : "word", 1 : "present"})
+negative_lexicon = negative_lexicon[negative_lexicon['present'] == 1]
+
+# positive emotion lexicon
+positive_lexicon = pd.read_csv('positive-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+positive_lexicon = positive_lexicon.rename(columns={0 : "word", 1 : "present"})
+positive_lexicon = positive_lexicon[positive_lexicon['present'] == 1]
+
+# sadness lexicon
+sadness_lexicon = pd.read_csv('sadness-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+sadness_lexicon = sadness_lexicon.rename(columns={0 : "word", 1 : "present"})
+sadness_lexicon = sadness_lexicon[sadness_lexicon['present'] == 1]
+
+# surprise lexicon
+surprise_lexicon = pd.read_csv('surprise-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+surprise_lexicon = surprise_lexicon.rename(columns={0 : "word", 1 : "present"})
+surprise_lexicon = surprise_lexicon[surprise_lexicon['present'] == 1]
+
+# trust lexicon
+trust_lexicon = pd.read_csv('trust-NRC-Emotion-Lexicon.txt', sep = "\t", header=None)
+trust_lexicon = trust_lexicon.rename(columns={0 : "word", 1 : "present"})
+trust_lexicon = trust_lexicon[trust_lexicon['present'] == 1]
+
+# test dataset
+def contains_word(s, w):
+    return (' ' + w + ' ') in (' ' + s + ' ')
+
+total_scores = []
+for i,text in enumerate(new_text):
+  if len(text.split()) > 0:
+    emotion_scores = {"Anger": 0, "Anticipation": 0, "Disgust": 0, "Fear": 0, "Joy": 0, "Negative": 0, "Positive":0, "Sadness": 0, "Surprise": 0, "Trust": 0}
+    # anger
+    for word in anger_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Anger'] += 1
+    emotion_scores['Anger'] = emotion_scores['Anger'] / len(text.split()) # normalize the counts
+
+    # anticipation
+    for word in anticipate_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Anticipation'] += 1
+    emotion_scores['Anticipation'] = emotion_scores['Anticipation'] / len(text.split()) # normalize the counts
+
+    # disgust
+    for word in disgust_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Disgust'] += 1
+    emotion_scores['Disgust'] = emotion_scores['Disgust'] / len(text.split()) # normalize the counts
+
+    # fear
+    for word in fear_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Fear'] += 1
+    emotion_scores['Fear'] = emotion_scores['Fear'] / len(text.split()) # normalize the counts
+
+    # joy
+    for word in joy_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Joy'] += 1
+    emotion_scores['Joy'] = emotion_scores['Joy'] / len(text.split()) # normalize the counts
+
+    # negative
+    for word in negative_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Negative'] += 1
+    emotion_scores['Negative'] = emotion_scores['Negative'] / len(text.split()) # normalize the counts
+
+    # positive
+    for word in positive_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Positive'] += 1
+    emotion_scores['Positive'] = emotion_scores['Positive'] / len(text.split()) # normalize the counts
+
+    # sadness
+    for word in sadness_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Sadness'] += 1
+    emotion_scores['Sadness'] = emotion_scores['Sadness'] / len(text.split()) # normalize the counts
+
+    # surprise
+    for word in surprise_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Surprise'] += 1
+    emotion_scores['Surprise'] = emotion_scores['Surprise'] / len(text.split()) # normalize the counts
+
+    # trust
+    for word in trust_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Trust'] += 1
+    emotion_scores['Trust'] = emotion_scores['Trust'] / len(text.split()) # normalize the counts
+
+    total_scores.append(emotion_scores)
+  else:
+    emotion_scores = {"Anger": 0, "Anticipation": 0, "Disgust": 0, "Fear": 0, "Joy": 0, "Negative": 0, "Positive":0, "Sadness": 0, "Surprise": 0, "Trust": 0}
+    total_scores.append(emotion_scores)
+
+# save to dataframe
+total_df = pd.DataFrame(total_scores)
+
+# training dataset
+def contains_word(s, w):
+    return (' ' + w + ' ') in (' ' + s + ' ')
+
+total_scores = []
+for i,text in enumerate(new_text_train):
+  if len(text.split()) > 0:
+    emotion_scores = {"Anger": 0, "Anticipation": 0, "Disgust": 0, "Fear": 0, "Joy": 0, "Negative": 0, "Positive":0, "Sadness": 0, "Surprise": 0, "Trust": 0}
+    # anger
+    for word in anger_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Anger'] += 1
+    emotion_scores['Anger'] = emotion_scores['Anger'] / len(text.split()) # normalize the counts
+
+    # anticipation
+    for word in anticipate_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Anticipation'] += 1
+    emotion_scores['Anticipation'] = emotion_scores['Anticipation'] / len(text.split()) # normalize the counts
+
+    # disgust
+    for word in disgust_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Disgust'] += 1
+    emotion_scores['Disgust'] = emotion_scores['Disgust'] / len(text.split()) # normalize the counts
+
+    # fear
+    for word in fear_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Fear'] += 1
+    emotion_scores['Fear'] = emotion_scores['Fear'] / len(text.split()) # normalize the counts
+
+    # joy
+    for word in joy_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Joy'] += 1
+    emotion_scores['Joy'] = emotion_scores['Joy'] / len(text.split()) # normalize the counts
+
+    # negative
+    for word in negative_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Negative'] += 1
+    emotion_scores['Negative'] = emotion_scores['Negative'] / len(text.split()) # normalize the counts
+
+    # positive
+    for word in positive_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Positive'] += 1
+    emotion_scores['Positive'] = emotion_scores['Positive'] / len(text.split()) # normalize the counts
+
+    # sadness
+    for word in sadness_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Sadness'] += 1
+    emotion_scores['Sadness'] = emotion_scores['Sadness'] / len(text.split()) # normalize the counts
+
+    # surprise
+    for word in surprise_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Surprise'] += 1
+    emotion_scores['Surprise'] = emotion_scores['Surprise'] / len(text.split()) # normalize the counts
+
+    # trust
+    for word in trust_lexicon['word'].tolist():
+      if contains_word(text, word):
+        emotion_scores['Trust'] += 1
+    emotion_scores['Trust'] = emotion_scores['Trust'] / len(text.split()) # normalize the counts
+
+    total_scores.append(emotion_scores)
+  else:
+    emotion_scores = {"Anger": 0, "Anticipation": 0, "Disgust": 0, "Fear": 0, "Joy": 0, "Negative": 0, "Positive":0, "Sadness": 0, "Surprise": 0, "Trust":0}
+    total_scores.append(emotion_scores)
+
+# save to dataframe
+total_df_train = pd.DataFrame(total_scores)
+
+
+# date
+# test data
+import pandas as pd
+import numpy as np
+
+data = pd.read_csv("Corona_NLP_test.csv", parse_dates=['TweetAt'])
+data['TweetAt'] = pd.to_datetime(data['TweetAt'], format = "%y/%m/%d")
+data['month'] = data['TweetAt'].dt.month
+
+#total_df['weeknumber'] = data['Week number'] # total_df is from the algorithm
+
+# train data
+import pandas as pd
+import numpy as np
+
+data_train = pd.read_csv("Corona_NLP_train.csv", parse_dates=['TweetAt'], encoding = 'latin-1', header=0)
+data_train['TweetAt'] = pd.to_datetime(data_train['TweetAt'], format = "%y/%m/%d")
+data_train['month'] = data_train['TweetAt'].dt.month
+
+# combining original train and test
+frames = [data, data_train]
+data_total = pd.concat(frames)
+
+# combining emotion ratings for train and test
+frames_ratings = [total_df, total_df_train]
+ratings_total = pd.concat(frames_ratings)
+
+# combining total emotion ratings with months
+ratings_total['month'] = data_total['month'] # ratings_total is derived from algorithm
+
+# volume of tweets per month of 2020
+for month in range(1,13):
+  month_df = ratings_total[ratings_total['month']== month]
+  num = month_df.shape[0]
+  per_num = (num / ratings_total.shape[0]) * 100
+  print("month {} has {} tweets ({} %)".format(month, num, per_num))
+
+import matplotlib.pyplot as plt
+
+#calculate sum of points for each team
+df_month_anger = ratings_total.groupby('month')['Anger'].mean()
+df_month_anticipation = ratings_total.groupby('month')['Anticipation'].mean()
+df_month_disgust = ratings_total.groupby('month')['Disgust'].mean()
+df_month_fear = ratings_total.groupby('month')['Fear'].mean()
+df_month_joy = ratings_total.groupby('month')['Joy'].mean()
+df_month_sadness = ratings_total.groupby('month')['Sadness'].mean()
+df_month_surprise = ratings_total.groupby('month')['Surprise'].mean()
+df_month_trust = ratings_total.groupby('month')['Trust'].mean()
+
+#create bar plot by group
+ax = df_month_anger.plot(kind='line')
+df_month_anticipation.plot(ax = ax)
+df_month_disgust.plot(ax = ax)
+df_month_fear.plot(ax = ax)
+df_month_joy.plot(ax = ax)
+df_month_sadness.plot(ax = ax)
+df_month_surprise.plot(ax = ax)
+df_month_trust.plot(ax = ax)
+plt.legend(["Anger", "Anticipation", "Disgust", "Fear", "Joy", "Sadness", "Surprise", "Trust"])
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+ax.set(xlabel = "month in 2020", ylabel = "mean emotion ratings")
