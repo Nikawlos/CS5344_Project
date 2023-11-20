@@ -1,0 +1,208 @@
+import pandas as pd
+
+# merging all the datasets
+data0 = pd.read_csv("reddit_rating_0_merged.csv")
+data1 = pd.read_csv("reddit_rating_1_merged.csv")
+data2 = pd.read_csv("reddit_rating_2_merged.csv")
+data3 = pd.read_csv("reddit_rating_3_merged.csv")
+data4 = pd.read_csv("reddit_rating_4_merged.csv")
+data5 = pd.read_csv("reddit_rating_5_merged.csv")
+data6 = pd.read_csv("reddit_rating_6_merged.csv")
+data7 = pd.read_csv("reddit_rating_7.csv")
+data8 = pd.read_csv("reddit_rating_8.csv")
+data9 = pd.read_csv("reddit_rating_9.csv")
+data10 = pd.read_csv("reddit_rating_10.csv")
+data11 = pd.read_csv("reddit_rating_11.csv")
+data12 = pd.read_csv("reddit_rating_12.csv")
+data13 = pd.read_csv("reddit_rating_13_merged.csv")
+data14 = pd.read_csv("reddit_rating_14_merged.csv")
+data15 = pd.read_csv("reddit_rating_15_merged.csv")
+data16 = pd.read_csv("reddit_rating_16_merged.csv")
+data17 = pd.read_csv("reddit_rating_17_merged.csv")
+
+reddit = [data0, data1, data2, data3, data4, data5, data6, data7, data8, data9,
+          data10, data11, data12, data13, data14, data15, data16, data17]
+data_reddit = pd.concat(reddit)
+
+# Reddit: comparing pre-covid, covid, and post-covid
+# data preparation
+data_reddit['date'] = pd.to_datetime(data_reddit['date']) # convert to datetime
+
+# precovid: March 11, 2020- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8027156/#:~:text=(1)%20On%2011%20March%202020,declared%20COVID%2D19%20a%20pandemic.
+precovid_reddit = data_reddit[data_reddit['date'] < '2020-03-11']
+
+# postcovid: July 09, 2021- https://www.defense.gov/Spotlights/Coronavirus-DOD-Response/Timeline/
+# Bravo to Alpha
+postcovid_reddit = data_reddit[data_reddit['date'] > '2021-07-09']
+
+# covid: inbetween
+covid_reddit = data_reddit[(data_reddit['date'] > '2020-03-11') & (data_reddit['date'] < '2021-07-09')]
+
+# Kruskal-Wallis test and Mann-Whitney U tests to compare the different periods
+# helper function to calculate the effect size
+def mannwhitney_effectsize(U, n1, n2):
+  return 1 - ((2 * U) / (n1 * n2))
+
+from scipy.stats import kruskal, mannwhitneyu
+
+emotion_list = ["anger", "anticipation", "disgust", "fear", "joy", "negative", "positive", "sadness", "surprise", "trust"]
+
+for emotion in emotion_list:
+  precovid = precovid_reddit[emotion].tolist()
+  covid = covid_reddit[emotion].tolist()
+  postcovid = postcovid_reddit[emotion].tolist()
+
+  # Kruskal-Wallis test
+  result = kruskal(precovid, covid, postcovid)
+  if result.pvalue < .05:
+    compare1 = mannwhitneyu(precovid, covid)
+    compare2 = mannwhitneyu(covid, postcovid)
+    print(emotion)
+    print("Kruskal-Wallis: ", result.statistic, ", p-value: ", round(result.pvalue,2))
+    print("precovid vs covid: ", compare1.statistic, ", p-value: ", round(compare1.pvalue,2))
+    print("precovid vs covid (effect size): ", mannwhitney_effectsize(compare1.statistic, len(precovid), len(covid)))
+    print("covid vs postcovid: ", compare2.statistic, ", p-value: ", round(compare2.pvalue,2))
+    print("covid vs postcovid (effect size): ", mannwhitney_effectsize(compare2.statistic, len(covid), len(postcovid)))
+  else:
+    print(emotion)
+    print("Kruskal-Wallis: ", result.statistic, ", p-value: ", round(result.pvalue,2))
+
+
+
+# time series analysis
+# data preparation
+data_reddit['date'] = pd.to_datetime(data_reddit['date']) # convert to datetime
+data_months = data_reddit.groupby(pd.Grouper(key="date", freq="M")).mean() # group by months
+import pymannkendall as mk
+emotion_list = ["anger", "anticipation", "disgust", "fear", "joy", "negative", "positive", "sadness", "surprise", "trust"]
+
+for emotion in emotion_list:
+  print(emotion)
+  data_months_emotion = data_months[emotion]
+  mk_result = mk.original_test(data_months_emotion)
+  print("trend: ", mk_result.trend, "h:", mk_result.h, "tau:", mk_result.Tau, "pvalue:", round(mk_result.p,2))
+
+
+
+#Compare the emotions within each time period
+# all pairs
+emotion_list = ["anger", "anticipation", "disgust", "fear", "joy", "negative", "positive", "sadness", "surprise", "trust"]
+res = [(a, b) for idx, a in enumerate(emotion_list) for b in emotion_list[idx + 1:]]
+# breaking up to different periods
+# data preparation
+data_reddit['date'] = pd.to_datetime(data_reddit['date']) # convert to datetime
+
+# precovid: March 11, 2020- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8027156/#:~:text=(1)%20On%2011%20March%202020,declared%20COVID%2D19%20a%20pandemic.
+precovid_reddit = data_reddit[data_reddit['date'] < '2020-03-11']
+
+# postcovid: July 09, 2021- https://www.defense.gov/Spotlights/Coronavirus-DOD-Response/Timeline/
+# Bravo to Alpha
+postcovid_reddit = data_reddit[data_reddit['date'] > '2021-07-09']
+
+# covid: inbetween
+covid_reddit = data_reddit[(data_reddit['date'] > '2020-03-11') & (data_reddit['date'] < '2021-07-09')]
+
+# precovid differences between emotions
+from scipy.stats import friedmanchisquare
+
+precovid_anger = precovid_reddit.anger
+precovid_anticipation = precovid_reddit.anticipation
+precovid_disgust = precovid_reddit.disgust
+precovid_fear = precovid_reddit.fear
+precovid_negative = precovid_reddit.negative
+precovid_positive = precovid_reddit.positive
+precovid_sadness = precovid_reddit.sadness
+precovid_surprise = precovid_reddit.surprise
+precovid_trust = precovid_reddit.trust
+
+friedman_precovid = friedmanchisquare(precovid_anger,
+                             precovid_anticipation,
+                             precovid_disgust,
+                             precovid_fear,
+                             precovid_negative,
+                             precovid_positive,
+                             precovid_sadness,
+                             precovid_surprise,
+                             precovid_trust)
+friedman_precovid
+
+def wilcox_es(z, n1, n2):
+  return round(z / (n1+n2)**(0.5),2)
+
+from scipy.stats import wilcoxon
+for pair in res:
+  emotion1 = precovid_reddit[pair[0]]
+  emotion2 = precovid_reddit[pair[1]]
+  wilcox = wilcoxon(emotion1, emotion2, method = 'approx')
+  print(pair)
+  print(wilcox.zstatistic, wilcox_es(wilcox.zstatistic, len(emotion1), len(emotion2)))
+
+# covid differences between emotions
+from scipy.stats import friedmanchisquare
+
+covid_anger = covid_reddit.anger
+covid_anticipation = covid_reddit.anticipation
+covid_disgust = covid_reddit.disgust
+covid_fear = covid_reddit.fear
+covid_negative = covid_reddit.negative
+covid_positive = covid_reddit.positive
+covid_sadness = covid_reddit.sadness
+covid_surprise = covid_reddit.surprise
+covid_trust = covid_reddit.trust
+
+friedman_covid = friedmanchisquare(covid_anger,
+                             covid_anticipation,
+                             covid_disgust,
+                             covid_fear,
+                             covid_negative,
+                             covid_positive,
+                             covid_sadness,
+                             covid_surprise,
+                             covid_trust)
+friedman_covid
+
+def wilcox_es(z, n1, n2):
+  return round(z / (n1+n2)**(0.5),2)
+
+from scipy.stats import wilcoxon
+for pair in res:
+  emotion1 = covid_reddit[pair[0]]
+  emotion2 = covid_reddit[pair[1]]
+  wilcox = wilcoxon(emotion1, emotion2, method = 'approx')
+  print(pair)
+  print(wilcox.zstatistic, wilcox_es(wilcox.zstatistic, len(emotion1), len(emotion2)))
+
+# postcovid differences between emotions
+from scipy.stats import friedmanchisquare
+
+postcovid_anger = postcovid_reddit.anger
+postcovid_anticipation = postcovid_reddit.anticipation
+postcovid_disgust = postcovid_reddit.disgust
+postcovid_fear = postcovid_reddit.fear
+postcovid_negative = postcovid_reddit.negative
+postcovid_positive = postcovid_reddit.positive
+postcovid_sadness = postcovid_reddit.sadness
+postcovid_surprise = postcovid_reddit.surprise
+postcovid_trust = postcovid_reddit.trust
+
+friedman_postcovid = friedmanchisquare(postcovid_anger,
+                             postcovid_anticipation,
+                             postcovid_disgust,
+                             postcovid_fear,
+                             postcovid_negative,
+                             postcovid_positive,
+                             postcovid_sadness,
+                             postcovid_surprise,
+                             postcovid_trust)
+friedman_postcovid
+
+def wilcox_es(z, n1, n2):
+  return round(z / (n1+n2)**(0.5),2)
+
+from scipy.stats import wilcoxon
+for pair in res:
+  emotion1 = postcovid_reddit[pair[0]]
+  emotion2 = postcovid_reddit[pair[1]]
+  wilcox = wilcoxon(emotion1, emotion2, method = 'approx')
+  print(pair)
+  print(wilcox.zstatistic, wilcox_es(wilcox.zstatistic, len(emotion1), len(emotion2)))
